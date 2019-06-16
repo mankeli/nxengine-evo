@@ -333,7 +333,8 @@ void input_poll(void)
 
           if (evt.type == SDL_KEYDOWN)
           {
-            if (key == '`') // bring up console
+            printf("hello kitty: %d '%c'\n", key, key);
+            if (key == 167) // bring up console
             {
 #if defined(DEBUG)
               extern bool freezeframe;

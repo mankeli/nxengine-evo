@@ -241,9 +241,6 @@ void Game::tick(void)
     tickfunctions[game.mode].OnTick();
   }
 
-  if (justpushed(F3KEY))
-    console.SetVisible(true);
-
   DrawDebug();
   console.Draw();
 }

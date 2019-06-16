@@ -818,6 +818,12 @@ void map_draw(uint8_t foreground)
             Renderer::getInstance()->tileset.drawTile(blit_x, blit_y, t);
         }
       }
+      else
+      {
+        Renderer::getInstance()->fillRect(blit_x, blit_y, blit_x + 15, blit_y + 15, 0, 0, 0);
+      }
+
+
       blit_x += TILE_W;
     }
 
