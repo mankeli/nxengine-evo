@@ -26,6 +26,10 @@ struct Settings
 
   in_action input_mappings[INPUT_COUNT];
   char language[256];
+
+  int scale;
+  bool widescreenhack;
+
 };
 
 bool settings_load(Settings *settings = NULL);

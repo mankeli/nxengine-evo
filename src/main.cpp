@@ -111,6 +111,7 @@ static inline void run_tick()
   static int frameskip       = 0;
 
   input_poll();
+  Renderer::getInstance()->handleResolutionChange();
 
   // input handling for a few global things
 
@@ -235,12 +236,14 @@ void gameloop(void)
 
       nexttick = curtime + GAME_WAIT;
 
+#if 0
       // pause game if window minimized
       if (!Renderer::getInstance()->isWindowVisible())
       {
         AppMinimized();
         nexttick = 0;
       }
+      #endif
     }
     else
     {
@@ -292,10 +295,6 @@ int main(int argc, char *argv[])
   char *basepath = SDL_GetBasePath();
   _chdir(basepath);
   SDL_free(basepath);
-#elif not defined(__VITA__) && not defined(__SWITCH__)
-  char *basepath = SDL_GetBasePath();
-  chdir(basepath);
-  SDL_free(basepath);
 #endif
 
 #if defined(__SWITCH__)
@@ -323,7 +322,7 @@ int main(int argc, char *argv[])
   // so we know the initial screen resolution.
   settings_load();
 
-  if (!Renderer::getInstance()->init(settings->resolution))
+  if (!Renderer::getInstance()->init(settings->scale, settings->widescreenhack))
   {
     fatal("Failed to initialize graphics.");
     return 1;

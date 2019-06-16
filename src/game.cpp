@@ -233,13 +233,16 @@ void Game::tick(void)
 
     if (justpushed(ESCKEY)
         && (game.mode == GM_NORMAL || game.mode == GM_INVENTORY || game.mode == GM_MAP_SYSTEM
-            || game.mode == GM_CREDITS))
+            || game.mode == GM_CREDITS || game.mode == GM_INTRO))
     {
       game.pause(GP_PAUSED);
     }
     // call the tick function for the current game mode
     tickfunctions[game.mode].OnTick();
   }
+
+  if (justpushed(F3KEY))
+    console.SetVisible(true);
 
   DrawDebug();
   console.Draw();

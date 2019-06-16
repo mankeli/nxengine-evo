@@ -137,7 +137,7 @@ bool load_map(const std::string &fname)
     }
 
   fclose(fp);
-
+#if 0
   if (Renderer::getInstance()->widescreen)
   {
     if (map.xsize * TILE_W < Renderer::getInstance()->screenWidth && map.ysize * TILE_W < Renderer::getInstance()->screenHeight)
@@ -174,6 +174,9 @@ bool load_map(const std::string &fname)
     map.maxxscroll = (((map.xsize * TILE_W) - Renderer::getInstance()->screenWidth) - 8) * CSFI;
     map.maxyscroll = (((map.ysize * TILE_H) - Renderer::getInstance()->screenHeight) - 8) * CSFI;
   }
+#endif
+
+  recalc_map_offsets();
 
   LOG_DEBUG("load_map: '{}' loaded OK! - {}x{}", fname, map.xsize, map.ysize);
   return 0;
@@ -181,42 +184,28 @@ bool load_map(const std::string &fname)
 
 void recalc_map_offsets()
 {
-  if (Renderer::getInstance()->widescreen)
-  {
-    if (map.xsize * TILE_W < Renderer::getInstance()->screenWidth && map.ysize * TILE_W < Renderer::getInstance()->screenHeight)
-    {
-      map.maxxscroll = (((map.xsize * TILE_W) - (Renderer::getInstance()->screenWidth - 80)) - 8) * CSFI;
-      map.maxyscroll = (((map.ysize * TILE_H) - (Renderer::getInstance()->screenHeight - 16)) - 8) * CSFI;
-    }
-    else if (map.xsize * TILE_W < Renderer::getInstance()->screenWidth)
-    {
-      if (map.xsize == 25)
-      { // MazeI
-        map.maxxscroll = (((map.xsize * TILE_W) - (Renderer::getInstance()->screenWidth - 48)) - 8) * CSFI;
-        map.maxyscroll = (((map.ysize * TILE_H) - Renderer::getInstance()->screenHeight) - 8) * CSFI;
-      }
-      else
-      { // Others
-        map.maxxscroll = (((map.xsize * TILE_W) - (Renderer::getInstance()->screenWidth - 80)) - 8) * CSFI;
-        map.maxyscroll = (((map.ysize * TILE_H) - Renderer::getInstance()->screenHeight) - 8) * CSFI;
-      }
-    }
-    else if (map.ysize * TILE_W < Renderer::getInstance()->screenHeight)
-    {
-      map.maxxscroll = (((map.xsize * TILE_W) - Renderer::getInstance()->screenWidth) - 8) * CSFI;
-      map.maxyscroll = (((map.ysize * TILE_H) - (Renderer::getInstance()->screenHeight - 16)) - 8) * CSFI;
-    }
-    else
-    {
-      map.maxxscroll = (((map.xsize * TILE_W) - Renderer::getInstance()->screenWidth) - 8) * CSFI;
-      map.maxyscroll = (((map.ysize * TILE_H) - Renderer::getInstance()->screenHeight) - 8) * CSFI;
-    }
-  }
-  else
-  {
-    map.maxxscroll = (((map.xsize * TILE_W) - Renderer::getInstance()->screenWidth) - 8) * CSFI;
-    map.maxyscroll = (((map.ysize * TILE_H) - Renderer::getInstance()->screenHeight) - 8) * CSFI;
-  }
+
+#define MAP_BORDER_AMT (8)
+
+  int sxmid = Renderer::getInstance()->screenWidth / 2;
+  int symid = Renderer::getInstance()->screenHeight / 2;
+  int mxmid = (map.xsize * TILE_W) / 2;
+  int mymid = (map.ysize * TILE_H) / 2;
+
+  int xx = mxmid - sxmid;
+  int yy = mymid - symid;
+
+  int mux = (((map.xsize * TILE_W) - Renderer::getInstance()->screenWidth) - MAP_BORDER_AMT);
+  int muy = (((map.ysize * TILE_H) - Renderer::getInstance()->screenHeight) - MAP_BORDER_AMT);
+
+  printf("s*mid %d %d m*mid %d %d ** %d %d mu* %d %d\n", sxmid, symid, mxmid, mymid, xx, yy, mux, muy);
+
+  map.minxscroll = (xx < MAP_BORDER_AMT ? xx : MAP_BORDER_AMT) * CSFI;
+  map.minyscroll = (yy < MAP_BORDER_AMT ? yy : MAP_BORDER_AMT) * CSFI;
+  map.maxxscroll = (xx < MAP_BORDER_AMT ? xx : mux) * CSFI;
+  map.maxyscroll = (yy < MAP_BORDER_AMT ? yy : muy) * CSFI;
+
+
 }
 
 // load a PXE (entity list for a map)
@@ -1122,24 +1111,25 @@ void c------------------------------() {}
 // scroll position sanity checking
 void map_sanitycheck(void)
 {
-#define MAP_BORDER_AMT (8 * CSFI)
-  if (map.real_xscroll < MAP_BORDER_AMT)
-    map.real_xscroll = MAP_BORDER_AMT;
-  if (map.real_yscroll < MAP_BORDER_AMT)
-    map.real_yscroll = MAP_BORDER_AMT;
+  #if 1
+  if (map.real_xscroll < map.minxscroll)
+    map.real_xscroll = map.minxscroll;
+  if (map.real_yscroll < map.minyscroll)
+    map.real_yscroll = map.minyscroll;
   if (map.real_xscroll > map.maxxscroll)
     map.real_xscroll = map.maxxscroll;
   if (map.real_yscroll > map.maxyscroll)
     map.real_yscroll = map.maxyscroll;
 
-  if (map.displayed_xscroll < MAP_BORDER_AMT)
-    map.displayed_xscroll = MAP_BORDER_AMT;
-  if (map.displayed_yscroll < MAP_BORDER_AMT)
-    map.displayed_yscroll = MAP_BORDER_AMT;
+  if (map.displayed_xscroll < map.minxscroll)
+    map.displayed_xscroll = map.minxscroll;
+  if (map.displayed_yscroll < map.minyscroll)
+    map.displayed_yscroll = map.minyscroll;
   if (map.displayed_xscroll > map.maxxscroll)
     map.displayed_xscroll = map.maxxscroll;
   if (map.displayed_yscroll > map.maxyscroll)
     map.displayed_yscroll = map.maxyscroll;
+    #endif
 }
 
 void map_scroll_jump(int x, int y)
@@ -1247,10 +1237,14 @@ Object *FindObjectByID2(int id2)
   Object *result = ID2Lookup[id2];
 
   if (result)
+  {
     LOG_DEBUG("FindObjectByID2: ID2 {:#04d} found: type {}; coords: ({}, {})", id2, DescribeObjectType(ID2Lookup[id2]->type),
          ID2Lookup[id2]->x / CSFI, ID2Lookup[id2]->y / CSFI);
+  }
   else
+  {
     LOG_WARN("FindObjectByID2: no such object {:#04d}", id2);
+  }
 
   return result;
 }

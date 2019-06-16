@@ -21,6 +21,7 @@ struct stMap
 {
   int xsize, ysize;
   int displayed_xscroll, displayed_yscroll;
+  int minxscroll, minyscroll;
   int maxxscroll, maxyscroll;
   int parscroll_x, parscroll_y;
 

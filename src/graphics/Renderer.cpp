@@ -35,9 +35,12 @@ Renderer *Renderer::getInstance()
   return Singleton<Renderer>::get();
 }
 
-bool Renderer::init(int resolution)
+bool Renderer::init(int newScale, int newWideScreen)
 {
-  _current_res = resolution;
+  setScale(newScale);
+  setWideScreen(newWideScreen);
+
+
   if (!initVideo())
     return false;
 
@@ -69,16 +72,10 @@ bool Renderer::isWindowVisible()
 
 bool Renderer::initVideo()
 {
-  uint32_t window_flags = SDL_WINDOW_SHOWN;
+  uint32_t window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
-  const NXE::Graphics::gres_t *res = getResolutions();
-
-  uint32_t width  = res[_current_res].width;
-  uint32_t height = res[_current_res].height;
-  scale        = res[_current_res].scale;
-  screenHeight = res[_current_res].base_height;
-  screenWidth  = res[_current_res].base_width;
-  widescreen   = res[_current_res].widescreen;
+  uint32_t width  = 600;
+  uint32_t height = 600;
 
   if (_window)
   {
@@ -137,6 +134,11 @@ bool Renderer::initVideo()
   }
 
   LOG_INFO("Renderer::initVideo: using: {} renderer", info.name);
+
+  setResolution(width, height);
+
+  resoFluff();
+
   return true;
 }
 
@@ -154,107 +156,93 @@ bool Renderer::flushAll()
 
 void Renderer::setFullscreen(bool enable)
 {
+
+  SDL_Rect bounds;
+  SDL_GetDisplayBounds(0, &bounds );
+  SDL_SetWindowPosition(_window, bounds.x, bounds.y);
+
   SDL_ShowCursor(!enable);
-  SDL_SetWindowFullscreen(_window, (enable ? SDL_WINDOW_FULLSCREEN : 0));
+  SDL_SetWindowFullscreen(_window, (enable ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+
+  if (enable)
+    setResolution(bounds.w, bounds.h);
+
+  resoFluff();
+
 }
 
-bool Renderer::setResolution(int r, bool restoreOnFailure)
+    void Renderer::queueResolutionChange(int newWidth, int newHeight)
+    {
+        printf("new res pending? %d %d, old %d %d\n", newWidth, newHeight, _currentWidth, _currentHeight);
+
+      if (newWidth != _currentWidth || newHeight != _currentHeight)
+      {
+
+        _reschangetimer = 1;
+        _pendingWidth = newWidth;
+        _pendingHeight = newHeight;
+      }
+    }
+    void Renderer::handleResolutionChange()
+    {
+      if (_reschangetimer == 0)
+      {
+
+      }
+      else if (_reschangetimer < 5)
+      {
+        _reschangetimer++;
+      }
+      else
+      {
+        setResolution(_pendingWidth, _pendingHeight);
+        resoFluff();
+        _reschangetimer = 0;
+      }
+
+    }
+
+
+void Renderer::setResolution(int newWidth, int newHeight)
 {
 #if defined(__VITA__) || defined(__SWITCH__)
   r = 1; // one fixed resolution
 #endif
 
-  LOG_INFO("Renderer::setResolution(%d)", r);
-  if (r == _current_res)
-    return 0;
+  LOG_INFO("Renderer::setResolution(%d, %d)", newWidth, newHeight);
 
-  uint32_t width  = screenWidth;
-  uint32_t height = screenHeight;
+  SDL_SetWindowSize(_window, newWidth, newHeight);
 
-  if (r == 0)
-  {
-    scale = 1;
-    widescreen = false;
-  }
-  else
-  {
-    const NXE::Graphics::gres_t *res = getResolutions();
-    scale        = res[r].scale;
-    screenHeight = res[r].base_height;
-    screenWidth  = res[r].base_width;
-    widescreen   = res[r].widescreen;
-    width        = res[r].width;
-    height       = res[r].height;
-  }
+  _currentWidth = newWidth;
+  _currentHeight = newHeight;
 
+}
+
+void Renderer::setScale(int newScale)
+{
+  scale = newScale;
   LOG_INFO("Setting scaling %d", scale);
+}
 
-  SDL_SetWindowSize(_window, width, height);
-
-  _current_res = r;
-
+void Renderer::setWideScreen(bool newWideScreen)
+{
+  widescreen = newWideScreen;
+}
+void Renderer::resoFluff()
+{
   if (!flushAll())
-    return false;
+  {
+    LOG_ERROR("why flushing all fails? :-D");
+  }
+
+  screenWidth = (_currentWidth-1) / scale + 1;
+  screenHeight = (_currentHeight-1) / scale + 1;
 
   recalc_map_offsets();
   textbox.RecalculateOffsets();
 
-  return true;
-}
 
-const Graphics::gres_t *Renderer::getResolutions()
-{
-  static NXE::Graphics::gres_t res[]
-      = {//      description, screen_w, screen_h, render_w, render_h, scale_factor, widescreen, enabled
-         // 4:3
-         {(char *)"---", 0, 0, 0, 0, 1, false, true},
-#if defined(__VITA__)
-         {(char *)"960x544", 960, 544, 480, 272, 2, true, true},
-#elif defined(__SWITCH__)
-         {(char *)"1920x1080", 1920, 1080, 480, 270, 4, true, true},
-#else
-         {(char *)"320x240", 320, 240, 320, 240, 1, false, true},
-         {(char *)"640x480", 640, 480, 320, 240, 2, false, true},
-         //        {(char*)"800x600",   800,      600,      320,      240,      2.5,          false,      true },
-         //        //requires float scalefactor
-         {(char *)"1024x768", 1024, 768, 340, 256, 3, false, true},
-         {(char *)"1280x1024", 1280, 1024, 320, 256, 4, false, true},
-         {(char *)"1600x1200", 1600, 1200, 320, 240, 5, false, true},
-         // widescreen
-         {(char *)"480x272", 480, 272, 480, 272, 1, true, true},
-         {(char *)"1360x768", 1360, 768, 454, 256, 3, true, true},
-         {(char *)"1366x768", 1366, 768, 455, 256, 3, true, true},
-         {(char *)"1440x900", 1440, 900, 480, 300, 3, true, true},
-         {(char *)"1600x900", 1600, 900, 533, 300, 3, true, true},
-         {(char *)"1920x1080", 1920, 1080, 480, 270, 4, true, true},
-#endif
-         {NULL, 0, 0, 0, 0, 0, false, false}};
 
-  SDL_DisplayMode dm;
-  SDL_GetDesktopDisplayMode(0, &dm);
-
-  LOG_DEBUG("DW: {}, DH: {}", dm.w, dm.h);
-  for (int i = 0; res[i].name; i++)
-  {
-    if (res[i].width > (uint32_t)dm.w || res[i].height > (uint32_t)dm.h)
-    {
-      LOG_INFO("Disabling {}", res[i].name);
-
-      res[i].enabled = false;
-    }
-  }
-
-  return res;
-}
-
-int Renderer::getResolutionCount()
-{
-  int i;
-  const gres_t *res = getResolutions();
-
-  for (i = 0; res[i].name; i++)
-    ;
-  return i;
 }
 
 void Renderer::showLoadingScreen()

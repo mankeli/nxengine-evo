@@ -40,7 +40,7 @@ class Renderer
     bool widescreen = false;
     int scale = 1;
 
-    bool init(int resolution);
+    bool init(int newScale, int newWideScreen);
     void close();
 
     bool isWindowVisible();
@@ -48,9 +48,12 @@ class Renderer
     bool initVideo();
     void setFullscreen(bool enable);
 
-    bool setResolution(int factor, bool restoreOnFailure = true);
-    const gres_t *getResolutions();
-    int getResolutionCount();
+    void queueResolutionChange(int newWidth, int newHeight);
+    void handleResolutionChange();
+    void setResolution(int newWidth, int newHeight);
+    void setScale(int newScale);
+    void setWideScreen(bool newWideScreen);
+    void resoFluff();
 
     bool flushAll();
 
@@ -99,9 +102,12 @@ class Renderer
   private:
     SDL_Window *_window = nullptr;
     SDL_Renderer *_renderer = nullptr;
-    int _current_res = -1;
     bool _need_clip = false;
     SDL_Rect _clip_rect;
+
+    int _reschangetimer;
+    int _pendingWidth, _pendingHeight;
+    int _currentWidth, _currentHeight;
 
   protected:
     friend class Singleton<Renderer>;

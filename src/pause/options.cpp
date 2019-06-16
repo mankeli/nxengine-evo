@@ -24,12 +24,16 @@ static void EnterControlsMenu(ODItem *item, int dir);
 static void EnterRebindMenu(ODItem *item, int dir);
 
 void LeavingMainMenu();
-void _res_get(ODItem *item);
-void _res_change(ODItem *item, int dir);
+void _scale_get(ODItem *item);
+void _scale_change(ODItem *item, int dir);
+void _ws_get(ODItem *item);
+void _ws_change(ODItem *item, int dir);
 void _fullscreen_get(ODItem *item);
 void _fullscreen_change(ODItem *item, int dir);
 void _facepics_get(ODItem *item);
 void _facepics_change(ODItem *item, int dir);
+void _fps_get(ODItem *item);
+void _fps_change(ODItem *item, int dir);
 
 void _lang_get(ODItem *item);
 void _lang_change(ODItem *item, int dir);
@@ -246,9 +250,11 @@ static void EnterGraphicsMenu(ODItem *item, int dir)
 
   dlg->Clear();
   NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_MOVE);
-  dlg->AddItem("Resolution: ", _res_change, _res_get, -1, OD_CHOICE);
+  dlg->AddItem("Pixel Size: ", _scale_change, _scale_get, -1, OD_CHOICE);
+  dlg->AddItem("Widescreen hack: ", _ws_change, _ws_get, -1, OD_CHOICE);
   dlg->AddItem("Fullscreen: ", _fullscreen_change, _fullscreen_get, -1, OD_CHOICE);
   dlg->AddItem("Animated facepics: ", _facepics_change, _facepics_get, -1, OD_CHOICE);
+  dlg->AddItem("Show FPS: ", _fps_change, _fps_get, -1, OD_CHOICE);
   dlg->AddSeparator();
   dlg->AddDismissalItem();
 }
@@ -269,52 +275,49 @@ static void EnterSoundMenu(ODItem *item, int dir)
   dlg->AddDismissalItem();
 }
 
-
-void _res_get(ODItem *item)
-{
-  const gres_t *reslist = Renderer::getInstance()->getResolutions();
-
-  if (settings->resolution < 0 || settings->resolution >= Renderer::getInstance()->getResolutionCount())
-  {
-    item->suffix[0] = 0;
-  }
-  else
-  {
-    strcpy(item->suffix, reslist[settings->resolution].name);
-  }
+#if 0
+  static const char *strs[] = {"Off", "On"};
+  strcpy(item->suffix, strs[settings->fullscreen]);
 }
 
-void _res_change(ODItem *item, int dir)
+void _fullscreen_change(ODItem *item, int dir)
 {
-  int numres = Renderer::getInstance()->getResolutionCount();
-  int newres;
+  settings->fullscreen ^= 1;
+  NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_SELECT);
+  Renderer::getInstance()->setFullscreen(settings->fullscreen);
+#endif
+void _scale_get(ODItem *item)
+{
+  static const char *strs[] = {"", "1", "2", "3", "4", "5", "6"};
+  strcpy(item->suffix, strs[settings->scale]);
+}
 
-  NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_DOOR);
+void _scale_change(ODItem *item, int dir)
+{
+  settings->scale += dir;
+  if (settings->scale <= 0)
+    settings->scale = 5;
+  else if (settings->scale > 5)
+    settings->scale = 1;
 
-  newres = (settings->resolution + dir);
-  if (newres >= numres)
-    newres = 1;
-  if (newres < 1)
-    newres = (numres - 1);
-  const gres_t *res = Renderer::getInstance()->getResolutions();
-  while (!res[newres].enabled)
-  {
-    newres += dir;
-    if (newres >= numres)
-      newres = 1;
-    if (newres < 1)
-      newres = (numres - 1);
-  }
+  NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_SELECT);
+  Renderer::getInstance()->setScale(settings->scale);
+  Renderer::getInstance()->resoFluff();
+}
 
-  if (Renderer::getInstance()->setResolution(newres, true))
-  {
-    settings->resolution = newres;
-  }
-  else
-  {
-    new Message("Resolution change failed");
-    NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_GUN_CLICK);
-  }
+void _ws_get(ODItem *item)
+{
+  static const char *strs[] = {"Off", "On"};
+  strcpy(item->suffix, strs[settings->widescreenhack]);
+}
+
+void _ws_change(ODItem *item, int dir)
+{
+  settings->widescreenhack ^= 1;
+
+  NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_SELECT);
+  Renderer::getInstance()->setWideScreen(settings->widescreenhack);
+  Renderer::getInstance()->resoFluff();
 }
 
 void _lang_get(ODItem *item)
@@ -367,6 +370,7 @@ void _fullscreen_change(ODItem *item, int dir)
   settings->fullscreen ^= 1;
   NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_SELECT);
   Renderer::getInstance()->setFullscreen(settings->fullscreen);
+  Renderer::getInstance()->resoFluff();
 }
 
 void _facepics_get(ODItem *item)
@@ -378,6 +382,18 @@ void _facepics_get(ODItem *item)
 void _facepics_change(ODItem *item, int dir)
 {
   settings->animated_facepics ^= 1;
+  NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_SELECT);
+}
+
+void _fps_get(ODItem *item)
+{
+  static const char *strs[] = {"Off", "On"};
+  strcpy(item->suffix, strs[settings->show_fps]);
+}
+
+void _fps_change(ODItem *item, int dir)
+{
+  settings->show_fps ^= 1;
   NXE::Sound::SoundManager::getInstance()->playSfx(NXE::Sound::SFX::SND_MENU_SELECT);
 }
 

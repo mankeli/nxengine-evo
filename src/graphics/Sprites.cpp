@@ -142,7 +142,9 @@ bool Sprites::_load_sif(const std::string &fname)
   return true;
 }
 
-Sprites::Sprites() {}
+Sprites::Sprites() {
+    memset(_spritesheets, 0, sizeof(_spritesheets));
+}
 Sprites::~Sprites()
 {
   close();

@@ -85,6 +85,9 @@ bool settings_load(Settings *setfile)
     setfile->last_save_slot = 0;
     setfile->fullscreen     = false;
 
+    setfile->scale = 1;
+    setfile->widescreenhack = 0;
+
     setfile->sound_enabled = true;
     setfile->music_enabled = 1; // both Boss and Regular music
     setfile->new_music     = 0;

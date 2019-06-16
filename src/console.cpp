@@ -609,6 +609,7 @@ void c------------------------------() {}
 
 void DebugConsole::SetVisible(bool newstate)
 {
+  printf("eh %d\n", newstate);
   LOG_DEBUG("DebugConsole::SetVisible({})", newstate ? "true" : "false");
 
   if (fVisible != newstate)

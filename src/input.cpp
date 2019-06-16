@@ -7,6 +7,7 @@
 #include "nx.h"
 #include "settings.h"
 #include "sound/SoundManager.h"
+#include "graphics/Renderer.h"
 
 #include <array>
 
@@ -267,6 +268,17 @@ void input_poll(void)
   {
     switch (evt.type)
     {
+      case SDL_WINDOWEVENT:
+      {
+        if (evt.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+        {
+          int width = evt.window.data1;
+          int height = evt.window.data2;
+          NXE::Graphics::Renderer::getInstance()->queueResolutionChange(width, height);
+
+        }
+      }
+      break;
       case SDL_KEYDOWN:
       case SDL_KEYUP:
       {

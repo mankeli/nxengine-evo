@@ -103,11 +103,13 @@ void SistersBoss::OnMapEntry()
   {
     main->xmark = 180 * 2;
     main->ymark = 61 * 2;
+    printf("sister widescreen init\n");
   }
   else
   {
     main->xmark = 180;
     main->ymark = 61;
+    printf("sister reg init\n");
   }
   main->timer2 = random(700, 1200);
   main->hp     = 500;
