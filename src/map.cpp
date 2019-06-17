@@ -705,9 +705,11 @@ void DrawFastLeftLayered(void)
     Renderer::getInstance()->blitPatternAcross(backdrop[map.backdrop], x, y1, y1, (y2 - y1) + 1);
     y1 = (y2 + 1);
   }
+  #if 0
   int mapy = map.displayed_yscroll / CSFI;
   if (mapy < 0 && map.backdrop == 9)
     Renderer::getInstance()->fillRect(0, 0, Renderer::getInstance()->screenWidth, -mapy, 0, 0, 0);
+  #endif
 }
 
 void map_flush_graphics()

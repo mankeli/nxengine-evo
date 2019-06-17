@@ -174,7 +174,9 @@ void SE_Fade::Draw(void)
     return;
   }
 
-  int frame = fade.curframe;
+  float frame = fade.curframe;
+  float frameadd_h = (320.f/16.f) / ((float)(Renderer::getInstance()->screenWidth)/16.f);
+  float frameadd_v = (240.f/16.f) / ((float)(Renderer::getInstance()->screenHeight)/16.f);
   switch (fade.sweepdir)
   {
     case FADE_RIGHT:
@@ -188,7 +190,7 @@ void SE_Fade::Draw(void)
           for (y = 0; y < Renderer::getInstance()->screenHeight; y += 16)
             Renderer::getInstance()->sprites.drawSprite(x, y, fade.sprite, frame);
         }
-        frame++;
+        frame += frameadd_h;
       }
       break;
 
@@ -203,7 +205,7 @@ void SE_Fade::Draw(void)
           for (y = 0; y < Renderer::getInstance()->screenHeight; y += 16)
             Renderer::getInstance()->sprites.drawSprite(x, y, fade.sprite, frame);
         }
-        frame++;
+        frame += frameadd_h;
       }
       break;
 
@@ -218,7 +220,7 @@ void SE_Fade::Draw(void)
           for (x = 0; x < Renderer::getInstance()->screenWidth; x += 16)
             Renderer::getInstance()->sprites.drawSprite(x, y, fade.sprite, frame);
         }
-        frame++;
+        frame += frameadd_v;
       }
       break;
 
@@ -233,15 +235,18 @@ void SE_Fade::Draw(void)
           for (x = 0; x < Renderer::getInstance()->screenWidth; x += 16)
             Renderer::getInstance()->sprites.drawSprite(x, y, fade.sprite, frame);
         }
-        frame++;
+        frame += frameadd_v;
       }
       break;
 
     case FADE_CENTER:
     {
-      int startframe = fade.curframe;
+      float startframe = fade.curframe;
       int centerx    = (Renderer::getInstance()->screenWidth / 2) - 8;
       int centery    = (Renderer::getInstance()->screenHeight / 2) - 8;
+
+      float frameadd_ch = (((320.f/ 2.f) - 8.f + 16.f)/16.f) / ((centery + 16) / 16.f);
+      float frameadd_cv = (((240.f/ 2.f) - 8.f + 16.f)/16.f) / ((centery + 16) / 16.f);
 
       for (x = 0; x < centerx + 16; x += 16)
       {
@@ -260,10 +265,10 @@ void SE_Fade::Draw(void)
             Renderer::getInstance()->sprites.drawSprite(centerx - x, centery - y, fade.sprite, frame);
           }
 
-          frame++;
+          frame += frameadd_cv;
         }
 
-        startframe++;
+        startframe += frameadd_ch;
       }
     }
     break;
