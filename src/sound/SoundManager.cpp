@@ -108,6 +108,9 @@ bool SoundManager::init()
 
   Pixtone::getInstance()->init();
   Organya::getInstance()->init();
+
+  updateSfxVolume();
+  updateMusicVolume();
   return true;
 }
 
@@ -337,8 +340,8 @@ void SoundManager::updateMusicVolume()
 
 bool SoundManager::_shouldMusicPlay(uint32_t songno, uint32_t musicmode)
 {
-  if (game.mode == GM_TITLE || game.mode == GM_CREDITS)
-    return true;
+//  if (game.mode == GM_TITLE || game.mode == GM_CREDITS)
+//    return true;
 
   switch (musicmode)
   {
