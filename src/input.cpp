@@ -16,12 +16,40 @@ in_action mappings[INPUT_COUNT];
 bool inputs[INPUT_COUNT];
 bool lastinputs[INPUT_COUNT];
 in_action last_sdl_action;
-SDL_Joystick *joy;
+SDL_Joystick *joy = NULL;
 SDL_Haptic *haptic;
 
 int ACCEPT_BUTTON = JUMPKEY;
 int DECLINE_BUTTON = FIREKEY;
 
+void init_joystick(int num)
+{
+    // Open joystick
+    joy = SDL_JoystickOpen(0);
+
+    if (joy)
+    {
+      LOG_INFO("Opened Joystick 0");
+      LOG_INFO("Name: {}", SDL_JoystickNameForIndex(0));
+      LOG_INFO("Number of Axes: {}", SDL_JoystickNumAxes(joy));
+      LOG_INFO("Number of Buttons: {}", SDL_JoystickNumButtons(joy));
+      LOG_INFO("Number of Balls: {}", SDL_JoystickNumBalls(joy));
+      haptic = SDL_HapticOpenFromJoystick(joy);
+      if (haptic == NULL)
+      {
+        LOG_INFO("No force feedback support");
+      }
+      else
+      {
+        if (SDL_HapticRumbleInit(haptic) != 0)
+          LOG_WARN("Coiuldn't init simple rumble");
+      }
+    }
+    else
+    {
+      LOG_WARN("Couldn't open Joystick 0");
+    }
+}
 
 bool input_init(void)
 {
@@ -110,31 +138,7 @@ bool input_init(void)
   SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC);
   if (SDL_NumJoysticks() > 0)
   {
-    // Open joystick
-    joy = SDL_JoystickOpen(0);
-
-    if (joy)
-    {
-      LOG_INFO("Opened Joystick 0");
-      LOG_INFO("Name: {}", SDL_JoystickNameForIndex(0));
-      LOG_INFO("Number of Axes: {}", SDL_JoystickNumAxes(joy));
-      LOG_INFO("Number of Buttons: {}", SDL_JoystickNumButtons(joy));
-      LOG_INFO("Number of Balls: {}", SDL_JoystickNumBalls(joy));
-      haptic = SDL_HapticOpenFromJoystick(joy);
-      if (haptic == NULL)
-      {
-        LOG_INFO("No force feedback support");
-      }
-      else
-      {
-        if (SDL_HapticRumbleInit(haptic) != 0)
-          LOG_WARN("Coiuldn't init simple rumble");
-      }
-    }
-    else
-    {
-      LOG_WARN("Couldn't open Joystick 0");
-    }
+    init_joystick(0);
   }
   return 0;
 }
@@ -333,7 +337,6 @@ void input_poll(void)
 
           if (evt.type == SDL_KEYDOWN)
           {
-            printf("hello kitty: %d '%c'\n", key, key);
             if (key == 167) // bring up console
             {
 #if defined(DEBUG)
@@ -411,6 +414,32 @@ void input_poll(void)
         }
       }
       break;
+
+      case SDL_JOYDEVICEADDED:
+      {
+        if (!joy)
+        {
+          printf("joy hot add joy: %i\n", evt.jdevice.which);
+          int joyidx = evt.jdevice.which;
+
+          init_joystick(joyidx);
+        }
+      }
+      break;
+
+      case SDL_JOYDEVICEREMOVED:
+      {
+        printf("joy hot remove joy: %i\n", evt.jdevice.which);
+        SDL_Joystick *remjoy = SDL_JoystickFromInstanceID(evt.jdevice.which);
+
+        if (joy == remjoy)
+        {
+          SDL_JoystickClose(joy);
+          joy = NULL;
+        }
+      }
+      break;
+
     }
   }
 
